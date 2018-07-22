@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Kore build tool",
   "main": "koremake.js",
+  "bin": {
+    "koremake": "./bin/koremake"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -26,6 +29,7 @@
     "@types/uuid": "^3.4.3",
     "chokidar": "^2.0.3",
     "fs-extra": "^6.0.0",
+    "typescript": "^2.9.2",
     "uuid": "^3.2.1"
   }
 }
