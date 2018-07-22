@@ -165,8 +165,8 @@ export class Project {
 	}
 
 	flatten() {
-		for (let sub of this.subProjects) sub.flatten();
-		for (let sub of this.subProjects) {
+		for (const sub of this.subProjects) sub.flatten();
+		for (const sub of this.subProjects) {
 			if (sub.cpp11) {
 				this.cpp11 = true;
 			}
@@ -232,7 +232,7 @@ export class Project {
 		return path.replace(/\\/g, '/');
 	}
 
-	addFileForReal(file: string, options: any) {
+	addFileForReal(file: string, options?: any) {
 		for (let index in this.files) {
 			if (this.files[index].file === file) {
 				this.files[index] = {file: file, options: options, projectDir: this.basedir, projectName: this.name};
@@ -302,20 +302,20 @@ export class Project {
 		}
 	}
 
-	addFile(file: string, options: any) {
+	addFile(file: string, options?: any) {
 		this.includes.push({file: file, options: options});
 	}
 
-	addFiles() {
+	addFiles(...files: string[]) {
 		let options: any = undefined;
-		for (let i = 0; i < arguments.length; ++i) {
-			if (typeof arguments[i] !== 'string') {
-				options = arguments[i];
+		for (let i = 0; i < files.length; ++i) {
+			if (typeof files[i] !== 'string') {
+				options = files[i];
 			}
 		}
-		for (let i = 0; i < arguments.length; ++i) {
-			if (typeof arguments[i] === 'string') {
-				this.addFile(arguments[i], options);
+		for (let i = 0; i < files.length; ++i) {
+			if (typeof files[i] === 'string') {
+				this.addFile(files[i], options);
 			}
 		}
 	}
@@ -324,9 +324,9 @@ export class Project {
 		this.javadirs.push(dir);
 	}
 
-	addJavaDirs() {
-		for (let i = 0; i < arguments.length; ++i) {
-			this.addJavaDir(arguments[i]);
+	addJavaDirs(...dirs: string[]) {
+		for (let i = 0; i < dirs.length; ++i) {
+			this.addJavaDir(dirs[i]);
 		}
 	}
 
@@ -334,9 +334,9 @@ export class Project {
 		this.excludes.push(exclude);
 	}
 
-	addExcludes() {
-		for (let i = 0; i < arguments.length; ++i) {
-			this.addExclude(arguments[i]);
+	addExcludes(...excludes: string[]) {
+		for (let i = 0; i < excludes.length; ++i) {
+			this.addExclude(excludes[i]);
 		}
 	}
 
@@ -345,10 +345,8 @@ export class Project {
 		this.defines.push(define);
 	}
 
-	addDefines() {
-		for (let i = 0; i < arguments.length; ++i) {
-			this.addDefine(arguments[i]);
-		}
+	addDefines(...args: string[]) {
+		args.forEach(define => this.addDefine(define));
 	}
 
 	addIncludeDir(include: string) {
@@ -356,34 +354,26 @@ export class Project {
 		this.includeDirs.push(include);
 	}
 
-	addIncludeDirs() {
-		for (let i = 0; i < arguments.length; ++i) {
-			this.addIncludeDir(arguments[i]);
-		}
+	addIncludeDirs(...dirs: string[]) {
+		dirs.forEach(dir => this.addIncludeDir(dir));
 	}
 
 	addLib(lib: string) {
 		this.libs.push(lib);
 	}
 
-	addLibs() {
-		for (let i = 0; i < arguments.length; ++i) {
-			this.addLib(arguments[i]);
-		}
+	addLibs(libs: string[]) {
+		libs.forEach(lib => this.addLib(lib));
 	}
-
 	addLibFor(system: string, lib: string) {
-		if (this.systemDependendLibraries[system] === undefined) this.systemDependendLibraries[system] = [];
-		this.systemDependendLibraries[system].push(lib);
+		const systemDependentLibrary =  this.systemDependendLibraries[system] || (this.systemDependendLibraries[system] = []);
+		systemDependentLibrary.push(lib);
 	}
 
-	addLibsFor() {
-		if (this.systemDependendLibraries[arguments[0]] === undefined) this.systemDependendLibraries[arguments[0]] = [];
-		for (let i = 1; i < arguments.length; ++i) {
-			this.systemDependendLibraries[arguments[0]].push(arguments[i]);
-		}
+	addLibsFor(system: string, ...libs: string[]) {
+		const systemDependentLibrary =  this.systemDependendLibraries[system] || (this.systemDependendLibraries[system] = []);
+		libs.forEach(lib => systemDependentLibrary.push(lib));
 	}
-
 	getFiles() {
 		return this.files;
 	}
@@ -421,20 +411,29 @@ export class Project {
 		return this.debugDir;
 	}
 
-	setDebugDir(debugDir: string) {
+	setDebugDir(debugDir: string): void {
 		this.debugDir = path.resolve(this.basedir, debugDir);
 	}
 
+	addProject(project: Project): void {
+		debugger;
+		this.subProjects.push(project);
+	}
+	/*
 	async addProject(directory: string) {
 		this.subProjects.push(await loadProject(path.isAbsolute(directory) ? directory : path.join(this.basedir, directory)));
-	}
+	}*/
 
-	static async create(directory: string, platform: string) {
+	static async create(directory: string, platform: string): Promise<Project> {
 		Project.koreDir = path.join(__dirname, '../../..');
 		Project.platform = platform;
-		let project = await loadProject(path.resolve(directory));
+
+		// TODO: set project constants here... or do it earlier?
+
+		const project = require(path.resolve(path.join(directory, './korefile.ts'))).default as Project;
 		if (project.kore) {
-			await project.addProject(Project.koreDir);
+			// 
+			// await project.addProject(Project.koreDir);
 		}
 		let defines = getDefines(platform, project.isRotated());
 		for (let define of defines) {
@@ -465,10 +464,5 @@ export class Project {
 		return new Promise<void>((resolve, reject) => {
 			resolve();
 		});
-	}
-
-	// deprecated
-	addSubProject() {
-
 	}
 }

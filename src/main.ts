@@ -271,7 +271,7 @@ async function exportKoremakeProject(from: string, to: string, platform: string,
 	project.searchFiles(undefined);
 	project.flatten();
 
-	let exporter: Exporter = null;
+	let exporter: Exporter;
 	if (platform === Platform.iOS || platform === Platform.OSX || platform === Platform.tvOS) exporter = new XCodeExporter();
 	else if (platform === Platform.Android) exporter = new AndroidExporter();
 	else if (platform === Platform.HTML5) exporter = new EmscriptenExporter();
@@ -298,8 +298,8 @@ async function exportKoremakeProject(from: string, to: string, platform: string,
 	}
 	else exporter = new VisualStudioExporter();
 
-	if (exporter === null) {
-		throw 'No exporter found for platform ' + platform + '.';
+	if (!exporter) {
+		throw `No exporter found for platform ${platform}.`;
 	}
 
 	exporter.exportSolution(project, from, to, platform, options.vrApi, options);
@@ -308,15 +308,17 @@ async function exportKoremakeProject(from: string, to: string, platform: string,
 }
 
 function isKoremakeProject(directory: string): boolean {
-	return fs.existsSync(path.resolve(directory, 'korefile.js'));
+	const koreFilePath = path.resolve(directory, 'korefile.ts');
+	return fs.existsSync(koreFilePath);
 }
 
 async function exportProject(from: string, to: string, platform: string, options: any): Promise<Project> {
+	console.log('ops:', from, to, platform, options);
 	if (isKoremakeProject(from)) {
 		return exportKoremakeProject(from, to, platform, options);
 	}
 	else {
-		throw 'korefile.js not found.';
+		throw 'korefile.ts not found.';
 	}
 }
 
@@ -364,7 +366,7 @@ function compileProject(make: child_process.ChildProcess, project: Project, solu
 
 export let api = 2;
 
-export async function run(options: any, loglog: any): Promise<string> {
+export async function run(options: any, loglog: any, koreContext: any): Promise<string> {
 	log.set(loglog);
 	
 	if (options.graphics !== undefined) {
@@ -400,6 +402,14 @@ export async function run(options: any, loglog: any): Promise<string> {
 	}
 	options.buildPath = options.debug ? 'Debug' : 'Release';
 	
+	
+	// set the global context fore korefiles
+	koreContext.setKoreContext( {
+		platform: options.target,
+		graphics: options.graphicsApi || Options.graphicsApi,
+		audio: options.audioApi || Options.audioApi,
+		vr: options.vrApi || Options.vrApi,
+	});
 	let project: Project = null;
 	try {
 		project = await exportProject(options.from, options.to, options.target, options);

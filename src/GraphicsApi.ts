@@ -1,4 +1,4 @@
-﻿export let GraphicsApi = {
+﻿export const GraphicsApi = {
 	Default: 'default',
 	OpenGL: 'opengl',
 	OpenGL1: 'opengl1',

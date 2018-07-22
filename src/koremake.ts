@@ -5,6 +5,7 @@ import {GraphicsApi} from './GraphicsApi';
 import {AudioApi} from './AudioApi';
 import {VrApi} from './VrApi';
 import {VisualStudioVersion} from './VisualStudioVersion';
+import { run } from './main';
 
 let defaultTarget: string;
 if (os.platform() === 'linux') {
@@ -152,96 +153,96 @@ for (let o in options) {
 		parsedOptions[option.full] = false;
 	}
 }
-
-let args = process.argv;
-for (let i = 2; i < args.length; ++i) {
-	let arg = args[i];
-
-	if (arg[0] === '-') {
-		if (arg[1] === '-') {
-			if (arg.substr(2) === 'help') {
-				printHelp();
-				process.exit(0);
-			}
-			let found = false;
-			for (let o in options) {
-				let option: any = options[o];
-				if (arg.substr(2) === option.full) {
-					found = true;
-					if (option.value) {
-						++i;
-						parsedOptions[option.full] = args[i];
-					}
-					else {
-						parsedOptions[option.full] = true;
+export function start(ctx:any) {
+	let args = process.argv;
+	for (let i = 2; i < args.length; ++i) {
+		let arg = args[i];
+	
+		if (arg[0] === '-') {
+			if (arg[1] === '-') {
+				if (arg.substr(2) === 'help') {
+					printHelp();
+					process.exit(0);
+				}
+				let found = false;
+				for (let o in options) {
+					let option: any = options[o];
+					if (arg.substr(2) === option.full) {
+						found = true;
+						if (option.value) {
+							++i;
+							parsedOptions[option.full] = args[i];
+						}
+						else {
+							parsedOptions[option.full] = true;
+						}
 					}
 				}
+				if (!found) throw 'Option ' + arg + ' not found.';
 			}
-			if (!found) throw 'Option ' + arg + ' not found.';
+			else {
+				if (arg[1] === 'h') {
+					printHelp();
+					process.exit(0);
+				}
+				if (arg.length !== 2) throw 'Wrong syntax for option ' + arg + ' (maybe try -' + arg + ' instead).';
+				let found = false;
+				for (let o in options) {
+					let option: any = options[o];
+					if (option.short && arg[1] === option.short) {
+						found = true;
+						if (option.value) {
+							++i;
+							parsedOptions[option.full] = args[i];
+						}
+						else {
+							parsedOptions[option.full] = true;
+						}
+					}
+				}
+				if (!found) throw 'Option ' + arg + ' not found.';
+			}
 		}
 		else {
-			if (arg[1] === 'h') {
-				printHelp();
-				process.exit(0);
-			}
-			if (arg.length !== 2) throw 'Wrong syntax for option ' + arg + ' (maybe try -' + arg + ' instead).';
-			let found = false;
-			for (let o in options) {
-				let option: any = options[o];
-				if (option.short && arg[1] === option.short) {
-					found = true;
-					if (option.value) {
-						++i;
-						parsedOptions[option.full] = args[i];
-					}
-					else {
-						parsedOptions[option.full] = true;
-					}
-				}
-			}
-			if (!found) throw 'Option ' + arg + ' not found.';
+			parsedOptions.target = arg;
 		}
+	}
+	
+	if (parsedOptions.run) {
+		parsedOptions.compile = true;
+	}
+	
+	if (parsedOptions.init) {
+		console.log('Initializing Kore project.\n');
+		require('./init').run(parsedOptions.name, parsedOptions.from, parsedOptions.projectfile);
+	}
+	else if (parsedOptions.update) {
+		console.log('Updating everything...');
+		require('child_process').spawnSync('git', ['submodule', 'foreach', '--recursive', 'git', 'pull', 'origin', 'master'], { stdio: 'inherit', stderr: 'inherit' });	
 	}
 	else {
-		parsedOptions.target = arg;
+		let logInfo = function (text: string, newline: boolean) {
+			if (newline) {
+				console.log(text);
+			}
+			else {
+				process.stdout.write(text);
+			}
+		};
+	
+		let logError = function (text: string, newline: boolean) {
+			if (newline) {
+				console.error(text);
+			}
+			else {
+				process.stderr.write(text);
+			}
+		};
+		require('./main').run(
+			parsedOptions,
+		{
+			info: logInfo,
+			error: logError
+		}, ctx);
 	}
-}
-
-if (parsedOptions.run) {
-	parsedOptions.compile = true;
-}
-
-if (parsedOptions.init) {
-	console.log('Initializing Kore project.\n');
-	require('./init').run(parsedOptions.name, parsedOptions.from, parsedOptions.projectfile);
-}
-else if (parsedOptions.update) {
-	console.log('Updating everything...');
-	require('child_process').spawnSync('git', ['submodule', 'foreach', '--recursive', 'git', 'pull', 'origin', 'master'], { stdio: 'inherit', stderr: 'inherit' });	
-}
-else {
-	let logInfo = function (text: string, newline: boolean) {
-		if (newline) {
-			console.log(text);
-		}
-		else {
-			process.stdout.write(text);
-		}
-	};
-
-	let logError = function (text: string, newline: boolean) {
-		if (newline) {
-			console.error(text);
-		}
-		else {
-			process.stderr.write(text);
-		}
-	};
-
-	require('./main.js').run(
-		parsedOptions,
-	{
-		info: logInfo,
-		error: logError
-	}, function () { });
 }

@@ -14,7 +14,7 @@ export interface PlatformType {
 	Switch: string;
 }
 
-export let Platform: PlatformType = {
+export const Platform: PlatformType = {
 	Windows: 'windows',
 	WindowsApp: 'windowsapp',
 	iOS: 'ios',

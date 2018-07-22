@@ -3,5 +3,6 @@ if ((Number(versions[0]) < 8 || (Number(versions[0]) === 8 && Number(versions[1]
 	console.error('Requires Node.js version 8.9 or higher but found ' + process.version + '.');
 	process.exit(1);
 }
-
-require('./out/koremake.js');
+// Add require hook for typescript files
+const koreContext = require('./koremake-require.js');
+require('./src/koremake.ts').start(koreContext);
