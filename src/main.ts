@@ -313,7 +313,6 @@ function isKoremakeProject(directory: string): boolean {
 }
 
 async function exportProject(from: string, to: string, platform: string, options: any): Promise<Project> {
-	console.log('ops:', from, to, platform, options);
 	if (isKoremakeProject(from)) {
 		return exportKoremakeProject(from, to, platform, options);
 	}

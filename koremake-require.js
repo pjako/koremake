@@ -41,11 +41,9 @@ require.extensions['.ts'] = function(module) {
  * @return {string} js file path
  */
 function compileTS (module) {
-  // console.log('module', module);
-  
-  var tmpDir = path.join(options.tmpDir, "tsreq");
-  var relativeFolder = path.dirname(path.relative(process.cwd(), module.filename));
-  var jsName = path.join(tmpDir, relativeFolder, path.basename(module.filename, ".ts") + ".js");
+  const tmpDir = path.join(options.tmpDir, "tsreq");
+  const relativeFolder = path.dirname(path.relative(process.cwd(), module.filename));
+  const jsName = path.join(tmpDir, relativeFolder, path.basename(module.filename, ".ts") + ".js");
   const fsFileContent = fs.readFileSync(module.filename, 'utf8');
   const output = typescript.transpileModule(fsFileContent, {
           compilerOptions: {
