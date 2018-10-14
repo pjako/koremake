@@ -1,4 +1,7 @@
 import * as os from 'os';
+import * as fs from 'fs';
+import * as path from 'path';
+import { exec } from 'child_process';
 import {Options} from './Options';
 import {Platform} from './Platform';
 import {GraphicsApi} from './GraphicsApi';
@@ -6,6 +9,7 @@ import {AudioApi} from './AudioApi';
 import {VrApi} from './VrApi';
 import {VisualStudioVersion} from './VisualStudioVersion';
 import { run } from './main';
+import { fstat } from 'fs-extra';
 
 let defaultTarget: string;
 if (os.platform() === 'linux') {
@@ -132,6 +136,91 @@ let parsedOptions: any = {
 
 };
 
+function getFileWithExtesion(dir: string, extension: string): string {
+	for(const file of fs.readdirSync(dir, 'utf8')) {
+		if (file.endsWith(extension)) {
+			return file;
+		}
+	}
+	return '';
+}
+
+function openProject(): void {
+	const buildFolder = path.join(process.cwd(), 'build/');
+	if (!fs.existsSync(buildFolder)) {
+		console.log('Build folder does not exist!', buildFolder);
+		return;
+	}
+	let opener;
+	let target;
+	switch (process.platform) {
+		case 'darwin': {
+			opener = 'open';
+			break;
+		}
+		case 'win32': {
+			opener = 'start ""';
+			target = getFileWithExtesion(buildFolder, '.vcxproj');
+			break;
+		}
+		default: {
+			// opener = path.join(__dirname, '../vendor/xdg-open');
+		}
+	}
+	if (!target) {
+		console.log('There no project file!');
+		return;
+	}
+	target = path.join(buildFolder, target);
+	if (process.env.SUDO_USER) {
+		opener = `sudo -u ${process.env.SUDO_USE} ${opener}`;
+	}
+	console.log(`open: ${`${opener} "${target}"`}`);
+	exec(`${opener} "${target}"`);
+}
+/*
+function openProject() {
+	let opener;
+
+	if (typeof(appName) === 'function') {
+		callback = appName;
+		appName = null;
+	}
+
+	switch (process.platform) {
+		case 'darwin': {
+			if (appName) {
+				opener = 'open -a "' + escape(appName) + '"';
+			} else {
+				opener = 'open';
+			}
+			break;
+		}
+		case 'win32':
+			// if the first parameter to start is quoted, it uses that as the title
+			// so we pass a blank title so we can quote the file we are opening
+			if (appName) {
+				opener = 'start "" "' + escape(appName) + '"';
+			} else {
+				opener = 'start ""';
+			}
+			break;
+		default:
+			if (appName) {
+				opener = escape(appName);
+			} else {
+				// use Portlands xdg-open everywhere else
+			}
+			break;
+	}
+
+	if (process.env.SUDO_USER) {
+	opener = 'sudo -u ' + process.env.SUDO_USER + ' ' + opener;
+	}
+	return exec(opener + ' "' + escape(target) + '"', callback);
+}
+*/
+
 function printHelp() {
 	console.log('khamake options:\n');
 	for (let o in options) {
@@ -155,9 +244,13 @@ for (let o in options) {
 }
 export function start(ctx:any) {
 	let args = process.argv;
+	if (args[2] === 'open') {
+		console.log('open project');
+		openProject();
+		return;
+	}
 	for (let i = 2; i < args.length; ++i) {
 		let arg = args[i];
-	
 		if (arg[0] === '-') {
 			if (arg[1] === '-') {
 				if (arg.substr(2) === 'help') {
